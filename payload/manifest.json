@@ -1,0 +1,9 @@
+{
+  "product": "dsh-desktop-next",
+  "version": "2.0.19-next",
+  "generated": "2026-10-25T09:06:06.817Z",
+  "stock": {
+    "lib/main.js": "6b1c337211b1851f656e21d45fe469a5bf15aa69cca827c0556dd55cb2722c0d",
+    "lib/web-document.js": "c8a212ccb70b425d5faf7cbf25e95aa30343c20162e541c6e5c5b7089ef32ffa"
+  }
+}

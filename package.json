@@ -1,0 +1,40 @@
+{
+  "name": "dsh-boot-mls",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MLS 冷启动动画装配插件：给 DSH NEXT 装「透明冷启动 + 鲸鱼揭幕 + 色块擦除」——校验壳版本、生成补丁 asar、编译/落位原生启动器、建桌面快捷方式，随时一键还原；另带 GitHub 设备登录、MinGit 便携安装与仓库发布。",
+  "main": "./index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-settings"]
+    }
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "bin/asar.cjs",
+    "payload/main.js",
+    "payload/web-document.js",
+    "payload/manifest.json",
+    "payload/Launcher.cs",
+    "payload/DSH-Boot-MLS.exe",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  }
+}

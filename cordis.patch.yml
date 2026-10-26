@@ -1,0 +1,5 @@
+# dsh-boot-mls bundle patch — one entry row for the host half.
+- insert:
+    - id: dsh-boot-mls
+      name: 'dsh-boot-mls'
+      config: {}
