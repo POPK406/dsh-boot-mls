@@ -1,6 +1,8 @@
 # dsh-boot-mls · DSH NEXT 冷启动动画装配插件
 
-把「透明冷启动 + 全屏鲸鱼揭幕 + 色块擦除进入界面」这套启动动画装到任一台 **DSH NEXT**（dsh-desktop-next 2.0.19-next 已校验）上，并把启动器、桌面快捷方式、还原链路一起配好。
+把「透明冷启动 + 全屏鲸鱼揭幕 + 色块擦除进入界面」这套启动动画装到任一台 **DSH NEXT**（dsh-desktop-next **2.0.20-next**，本版已校验；2.0.19-next 的移植路径保留在 `bin/port-mls-2.0.20.cjs` 说明里）上，并把启动器、桌面快捷方式、还原链路一起配好。
+
+此外附带一层**冷启动视觉增强**（v3）：透视入场、五层绿框共用一台摄影机做弯曲包络、故障抖动，以及冲屏到画布的同轴交接。样式集中在 `bin/startup-effects.css`，可用 `bin/apply-effects-to-main.cjs` 叠加到任意已打补丁的 `payload/main.js` 上，也可整层不装。
 
 > 动画不是本仓库原创。**出处见下节「来源与致谢」**——图形与引擎来自 MLS 主题包，本仓库只做「装配 / 落位 / 一键还原」这层壳。
 
@@ -26,7 +28,15 @@
 主题包能在**已装好主题**的环境里播放动画；但 DSH NEXT 的启动首帧写死在壳子（`app.asar`）里，插件层拿不到首帧，所以必须改壳。本仓库负责这一层：
 
 ```
-bin/asar.cjs            asar 读写（0x20 头部填充、条目对齐）
+bin/install.cjs          装配入口：校验壳版本 → 重建补丁包 → 备份原版
+bin/rebuild.cjs           asar 重建核心（头 pickle、逐条 SHA-256、payload 不留缝隙）
+bin/asar.cjs            asar 只读解析（条目定位、findInstall）
+bin/verify-rebuild.cjs  重建产物全量校验（布局 / 边界 / 完整性 / 语法 / 注入标记）
+bin/revert.cjs          命令行还原
+bin/apply-effects-to-main.cjs  把 bin/startup-effects.css 视觉层叠加到已打补丁的 main.js
+bin/startup-effects.css        冷启动视觉增强样式（v3，可整层不用）
+bin/port-mls-2.0.20.cjs        2.0.19 → 2.0.20 的移植脚本（新版壳重写时按需复用）
+bin/install-2.0.20.cjs         一键：重建 + 校验 + 装启动器
 payload/main.js         打过补丁的 lib/main.js（含 mlsBootOverlay 覆盖层控制器）
 payload/web-document.js 打过补丁的 lib/web-document.js（首帧 + 抑制主题二次动画）
 payload/manifest.json   期望的原版文件摘要（版本校验）
@@ -41,6 +51,8 @@ payload/proxy-ca-*.pem  本机 TLS 中间代理根证书（可选，测网时用
 2. 用 `payload/*` 替换这两个文件，重建出 `resources/app.asar.mls-transparent`（**不碰正在运行的原版**），其余条目逐字节校验一致；
 3. 首次把原版备份为 `resources/app.asar.stock-mls`；
 4. 原生启动器 `DSH-Boot-MLS.exe` 负责：关掉残留进程 → 换补丁包 → 启动 → 45 秒内检测到窗口即保留，否则自动回滚并弹窗说明、此后不再尝试；日志 `%LOCALAPPDATA%\mls-boot\launcher.log`。
+
+重建产物的自检（`bin/verify-rebuild.cjs`）会确认：头部 pickle 布局正确、所有 packed 条目在文件界内且相互衔接（`nonContiguous: 0`）、每条 SHA-256 与 4MB 分块摘要都可复算、`lib/main.js` 与 `lib/web-document.js` 能通过 `node --check`（按 ES module 解析）、且启动覆盖层与视觉增强的关键标记齐全。
 
 ## 手动装配（不装插件）
 
@@ -60,7 +72,17 @@ payload\DSH-Boot-MLS.exe            # 或装到 %LOCALAPPDATA%\mls-boot\ 后建�
 - 只改壳内 `lib/main.js` 与 `lib/web-document.js`，**不碰主题插件、不碰 profile、不碰 DSH 配置**。
 - 原生标题栏按钮在动画期间不隐藏（上游桌面版靠主题的壳补丁做这块，本包没做）。
 - 每次冷启动播一次；刷新页面、从托盘再打开不重播。
-- DSH NEXT 升级会覆盖 `app.asar`，届时需重跑 `bin/install.cjs`。
+- **DSH NEXT 自动升级会整包替换 `resources` 目录，补丁包、stock 备份、启动器会一并消失**——这时启动器会弹「没有找到补丁包」并退回原版启动。升级后重跑 `bin/install.cjs` 并重新部署 `payload/DSH-Boot-MLS.exe` 即可；若版本变了，先跑 `payload/manifest.json` 的清单生成（见 `tools`）或直接用 `--force` 试装配。本版针对 **2.0.20-next** 的壳重写了 `main.js` 补丁（2.0.20 把 `main.js` 从 349KB 缩到 254KB 并重排了 `createWindow` / `ready-to-show`），移植差异由 `bin/port-mls-2.0.20.cjs` 记录。
+
+## 视觉增强层（可选）
+
+`bin/startup-effects.css` 是叠加在启动覆盖层上的增强样式，`bin/apply-effects-to-main.cjs` 会把它的 CSS 与三个钩子（标志入场、标题入场、五框共用摄影机）注入 `payload/main.js` 的 `MLS_BOOT_HTML` 里：
+
+```powershell
+node bin/apply-effects-to-main.cjs payload\main.js payload\main.js   # 就地叠加（幂等，按 V3 标记去重）
+```
+
+要点：五层绿框不再是各自固定倾角，而是由一条共享包络（`--mb-bend-y` / `--mb-bend-x` / `--mb-scale`）统一驱动，起飞期间只改 `transform`（无 filter/阴影重绘），因此不会互相穿插或抖动；冲屏收尾与马拉松画布用同一根 1400px 透视轴衔接。若不喜欢，重跑一次不带该层的 `bin/install.cjs`（用 git 恢复 `payload/main.js` 后重建）即可去掉。
 
 ## Git 推送（本机已就绪）
 

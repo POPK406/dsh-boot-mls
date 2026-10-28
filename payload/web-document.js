@@ -1,4 +1,4 @@
-import { r as NATIVE_ACCESS_HEADER } from "./desktop-contract-Dfyxcsjh.js";
+import { r as NATIVE_ACCESS_HEADER } from "./desktop-contract-Djnia2On.js";
 import { extname, resolve, sep } from "node:path";
 import { readFile } from "node:fs/promises";
 //#region src/web-document.ts
